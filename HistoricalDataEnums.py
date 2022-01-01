@@ -1,11 +1,14 @@
 from enum import Enum
+import datetime
 
-class HistoricaDataEnums(Enum):
+class HistoricalDataEnums(Enum):
     DURATION_ONESECOND = "1 S"
     DURATION_ONEDAY   = "1 D"
     DURATION_ONEWEEK   = "1 W"
     DURATION_ONEMONTH  = "1 M"
     DURATION_ONEYEAR   = "1 Y"
+    DURATION_TWOYEARS  = "2 Y"
+    DURATION_FIVEYEARS = "5 Y"
 
     BAR_SIZE_ONESECOND = "1 secs"
     BAR_SIZE_FIVESECONDS = "5 secs"	
@@ -43,3 +46,9 @@ class HistoricaDataEnums(Enum):
     HISTORICAL_DATA_TYPE_YIELDASK = "YIELD_ASK"
     HISTORICAL_DATA_TYPE_YIELDBIDASK = "YIELD_BID_ASK"
     HISTORICAL_DATA_TYPE_YIELDLAST = "YIELD_LAST"
+
+    SYMBOL_LOOKUP_DATA = "SYMBOL_LOOKUP_DATA"
+    RAW_EQUITY_DATA = "RAW_EQUITY_DATA"
+
+    QUERY_TIME = (datetime.datetime.today() - datetime.timedelta(days=1)).strftime("%Y%m%d %H:%M:%S")
+    

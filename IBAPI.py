@@ -23,7 +23,7 @@ class IBAPI(EWrapper, EClient):
         self.csvClient = CsvUtility(headers)
 
     def historicalData(self, reqId:int, bar: BarData):
-        print("HistoricalData. ReqId:", reqId, "BarData.", bar)
+        # print("HistoricalData. ReqId:", reqId, "BarData.", bar)
         #rowData = str(bar.date) + "," + str(bar.open) + "," +  str(bar.high) + "," +  str(bar.low) + "," +  str(bar.close) + "," +  str(bar.volume) + "," +  str(bar.average) + "," +  str(bar.barCount)
         barData = [bar.date, bar.open, bar.high, bar.low, bar.close, bar.volume, bar.average, bar.barCount]
         self.csvClient.insertRow(barData)

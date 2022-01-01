@@ -5,6 +5,7 @@ from prompt_toolkit import *
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from HistoricalDataEnums import *
+from DataHandler import DataHandler
 
 import os
 import time
@@ -49,14 +50,14 @@ class Program():
         firstSelection, secondSelection = -1, -1
 
         # First Symbol Selection
-        user_input = prompt('First Symbol>', history=FileHistory('history.txt'), auto_suggest=AutoSuggestFromHistory())
+        user_input = prompt('First Symbol [LONG]>', history=FileHistory('history.txt'), auto_suggest=AutoSuggestFromHistory())
         self.operations.stockSearch(user_input)
 
         time.sleep(1)
         path = os.getcwd()+"\\choices.csv"
         headers = ['conId', 'symbol', 'secType', 'primExchange', 'currency', 'derivativeSecTypes']
         csvUtility = CsvUtility(headers)
-        headers, resultsDictionary = csvUtility.readCsvToList(path)
+        headers, resultsDictionary = csvUtility.readCsvToList(path, HistoricalDataEnums.SYMBOL_LOOKUP_DATA.value)
 
         print("Select from an option below. (For example: Option 4 -> Type 4 and Press ENTER")
         print("")
@@ -76,11 +77,11 @@ class Program():
         os.system('cls' if os.name == 'nt' else 'clear')
 
         # Second Symbol Selection
-        user_input = prompt('Second Symbol>', history=FileHistory('history.txt'), auto_suggest=AutoSuggestFromHistory())
+        user_input = prompt('Second Symbol [SHORT]>', history=FileHistory('history.txt'), auto_suggest=AutoSuggestFromHistory())
         self.operations.stockSearch(user_input)
 
         time.sleep(1)
-        headers, resultsDictionary = csvUtility.readCsvToList(path)
+        headers, resultsDictionary = csvUtility.readCsvToList(path, HistoricalDataEnums.SYMBOL_LOOKUP_DATA.value)
 
         print("Select from an option below. (For example: Option 4 -> Type 4 and Press ENTER")
         print("")
@@ -99,32 +100,50 @@ class Program():
 
         os.system('cls' if os.name == 'nt' else 'clear')
 
-        print("Symbols Selected: [", firstContract.symbol, ", ", secondContract.symbol, "]")
-        capital_allocation = prompt('Capital Allocation (ex: 10500)>', history=FileHistory('capitalallocationhistory.txt'), auto_suggest=AutoSuggestFromHistory())
+        print("Symbols Selected: [ LONG:", firstContract.symbol, ", SHORT:", secondContract.symbol, "]")
+        capital_allocation = prompt('Rough Desired Market Exposure (ex: 10500)>', history=FileHistory('capitalallocationhistory.txt'), auto_suggest=AutoSuggestFromHistory())
         
-        queryTime = (datetime.datetime.today() - datetime.timedelta(days=180)).strftime("%Y%m%d %H:%M:%S")
         headers = ['date', 'open', 'high', 'low', 'close', 'volume', 'average', 'barCount']
-        self.operations.client.csvClient.setPath(headers, os.getcwd() + "//{}.csv".format(firstContract.symbol))
+        queryTime = HistoricalDataEnums.QUERY_TIME.value
+        duration = HistoricalDataEnums.DURATION_FIVEYEARS.value
+        barSize = HistoricalDataEnums.BAR_SIZE_ONEMONTH.value
+        historicalDataType = HistoricalDataEnums.HISTORICAL_DATA_TYPE_MIDPOINT.value
+
+        firstSymbolPath = os.getcwd() + "//{}.csv".format(firstContract.symbol)
+        self.operations.client.csvClient.setPath(headers, firstSymbolPath)
         firstSymbolDataSet = self.operations.getHistoricalMarketData(
             100,
             firstContract, 
             queryTime, 
-            HistoricaDataEnums.DURATION_ONEMONTH.value, 
-            HistoricaDataEnums.BAR_SIZE_ONEDAY.value, 
-            HistoricaDataEnums.HISTORICAL_DATA_TYPE_MIDPOINT.value)
-        time.sleep(1)
-        self.operations.client.csvClient.setPath(headers, os.getcwd() + "//{}.csv".format(secondContract.symbol))
+            duration, 
+            barSize, 
+            historicalDataType)
+        time.sleep(2)
+
+        secondSymbolPath = os.getcwd() + "//{}.csv".format(secondContract.symbol)
+        self.operations.client.csvClient.setPath(headers, secondSymbolPath)
         secondSymbolDataSet = self.operations.getHistoricalMarketData(
             101,
             secondContract, 
             queryTime, 
-            HistoricaDataEnums.DURATION_ONEMONTH.value, 
-            HistoricaDataEnums.BAR_SIZE_ONEDAY.value, 
-            HistoricaDataEnums.HISTORICAL_DATA_TYPE_MIDPOINT.value)
+            duration, 
+            barSize, 
+            historicalDataType)
+        time.sleep(2)
 
-        time.sleep(100)
+        firstSymbolData = self.operations.client.csvClient.readCsvToList(firstSymbolPath, HistoricalDataEnums.RAW_EQUITY_DATA.value)
+        secondSymbolData = self.operations.client.csvClient.readCsvToList(secondSymbolPath, HistoricalDataEnums.RAW_EQUITY_DATA.value)
+        
+        firstSymbolDataHandler = DataHandler(firstSymbolData[0], firstSymbolData[1], self.operations)
+        firstSymbolBetaAgainstMarket = firstSymbolDataHandler.getBetaAgainstMarketIndex2Yr()
 
-        
-        
+        secondSymbolDataHandler = DataHandler(secondSymbolData[0], secondSymbolData[1], self.operations)
+        secondSymbolBetaAgainstMarket = secondSymbolDataHandler.getBetaAgainstMarketIndex2Yr()
+
+        capitalDistribution = firstSymbolDataHandler.getCapitalAllocation(firstSymbolBetaAgainstMarket, secondSymbolBetaAgainstMarket, capital_allocation)
+        while True:
+            userInput = prompt('Enter "exit" to exit>')
+            if userInput.lower() == "exit":
+                break
 
 x = Program()
